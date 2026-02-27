@@ -52,15 +52,6 @@
 
             <form id="deleteForm" class="space-y-5" onsubmit="event.preventDefault(); initiateDelete();">
                 
-                <!-- Web App URL -->
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">ลิงก์ Web App (URL)</label>
-                    <input type="url" id="webappUrl" required
-                        placeholder="https://script.google.com/macros/s/.../exec"
-                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all text-sm outline-none bg-white/50">
-                    <p class="text-xs text-gray-400 mt-1">*นำลิงก์ที่ได้จากการ Deploy มาวางที่นี่</p>
-                </div>
-
                 <!-- Search Text -->
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">ข้อความที่ต้องการค้นหา</label>
@@ -125,6 +116,9 @@
         const resultIcon = document.getElementById('resultIcon');
         const confirmModal = document.getElementById('confirmModal');
 
+        // ฝังลิงก์ Web App ของคุณไว้ที่นี่
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzN1z7MZ20t-DE3YiRjeyS-Jme_q52t-b1uzleS1jm6Ro6aiWbFNeyL4bU6SxDsldO-/exec';
+
         // ฟังก์ชันเมื่อกดปุ่มหลัก
         function initiateDelete() {
             const searchText = document.getElementById('searchText').value.trim();
@@ -148,7 +142,6 @@
         async function executeDelete() {
             closeModal(); // ปิด Modal ก่อน
             
-            const webappUrl = document.getElementById('webappUrl').value.trim();
             const searchText = document.getElementById('searchText').value.trim();
             const sheetName = document.getElementById('sheetName').value.trim();
 
@@ -167,7 +160,7 @@
 
             try {
                 // ส่ง Request ไปยัง Google Apps Script (ใช้ text/plain เพื่อเลี่ยงปัญหา CORS preflight)
-                const response = await fetch(webappUrl, {
+                const response = await fetch(WEB_APP_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'text/plain;charset=utf-8',
