@@ -3,13 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบค้นหาและลบข้อมูล Google Sheets</title>
+    <title>ระบบลบตอนนิยายอัจฉริยะ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Sarabun', sans-serif;
-        }
+        body { font-family: 'Sarabun', sans-serif; }
         .glass-panel {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -26,64 +24,90 @@
             vertical-align: middle;
             margin-right: 8px;
         }
+        .main-loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #ef4444;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-indigo-50 via-white to-blue-50 min-h-screen flex items-center justify-center p-4">
+<body class="bg-gradient-to-br from-indigo-50 via-white to-red-50 min-h-screen flex items-center justify-center p-4">
 
-    <div class="glass-panel w-full max-w-md rounded-2xl p-8 border border-white/50 relative overflow-hidden">
+    <div class="glass-panel w-full max-w-md rounded-3xl p-8 border border-white/50 relative overflow-hidden shadow-xl">
+        
         <!-- Decoration -->
         <div class="absolute -top-10 -right-10 w-32 h-32 bg-red-100 rounded-full blur-2xl opacity-50"></div>
         <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-blue-100 rounded-full blur-2xl opacity-50"></div>
 
         <div class="relative z-10">
             <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-12 h-12 bg-red-100 text-red-500 rounded-xl mb-4">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <div class="inline-flex items-center justify-center w-14 h-14 bg-red-50 text-red-500 rounded-2xl mb-4 shadow-sm">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                     </svg>
                 </div>
                 <h1 class="text-2xl font-bold text-gray-800">ระบบลบข้อมูลอัจฉริยะ</h1>
-                <p class="text-sm text-gray-500 mt-1">ลบแถวใน Google Sheets จากระยะไกล</p>
+                <p class="text-sm text-gray-500 mt-1">ลบตอนนิยายใน Google Sheets จากระยะไกล</p>
             </div>
 
-            <form id="deleteForm" class="space-y-5" onsubmit="event.preventDefault(); initiateDelete();">
+            <!-- Loading State -->
+            <div id="loadingState" class="flex flex-col items-center justify-center py-10 space-y-4">
+                <div class="main-loader"></div>
+                <p class="text-gray-500 text-sm animate-pulse">กำลังดึงข้อมูลจากฐานข้อมูล...</p>
+            </div>
+
+            <!-- Main Form -->
+            <form id="deleteForm" class="space-y-5 hidden" onsubmit="event.preventDefault(); initiateDelete();">
                 
-                <!-- Search Text -->
+                <!-- เลือกนิยาย -->
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">ข้อความที่ต้องการค้นหา</label>
-                    <input type="text" id="searchText" required
-                        placeholder="พิมพ์คำค้นหา เช่น รหัสสินค้า, ชื่อ..."
-                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all text-sm outline-none bg-white/50">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">เรื่องที่จะลบ</label>
+                    <select id="novelSelect" required onchange="filterChapters()"
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all text-sm outline-none bg-white/50 cursor-pointer appearance-none">
+                        <option value="">-- เลือกเรื่อง --</option>
+                    </select>
                 </div>
 
-                <!-- Sheet Name (Optional) -->
+                <!-- เลือกตอน -->
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">ชื่อชีต (ระบุหรือไม่ก็ได้)</label>
-                    <input type="text" id="sheetName"
-                        placeholder="เช่น Sheet1 (ปล่อยว่างเพื่อหาทุกชีต)"
-                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all text-sm outline-none bg-white/50">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">เลือกตอนที่ต้องการจะลบ</label>
+                    <select id="chapterSelect" required onchange="updateChapterTitle()" disabled
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all text-sm outline-none bg-white/50 cursor-pointer appearance-none disabled:bg-gray-100 disabled:cursor-not-allowed">
+                        <option value="">-- กรุณาเลือกเรื่องก่อน --</option>
+                    </select>
                 </div>
 
-                <!-- Submit Button -->
-                <button type="submit" id="submitBtn"
-                    class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3.5 px-4 rounded-xl transition-colors shadow-lg shadow-red-500/30 flex items-center justify-center">
+                <!-- แสดงชื่อตอน -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">ชื่อตอน</label>
+                    <input type="text" id="chapterTitle" readonly
+                        placeholder="ชื่อตอนจะแสดงที่นี่อัตโนมัติ"
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-500 transition-all text-sm outline-none cursor-not-allowed">
+                </div>
+
+                <!-- ปุ่ม Submit -->
+                <button type="submit" id="submitBtn" disabled
+                    class="w-full bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white font-semibold py-3.5 px-4 rounded-xl transition-colors shadow-lg shadow-red-500/30 flex items-center justify-center mt-2 cursor-pointer disabled:cursor-not-allowed">
                     <span id="btnText">ค้นหาและลบแถวทันที</span>
                 </button>
             </form>
 
-            <!-- Result Box -->
-            <div id="resultBox" class="mt-6 hidden rounded-xl p-4 text-sm border">
-                <span id="resultIcon" class="mr-2"></span>
-                <span id="resultMessage"></span>
+            <!-- กล่องแสดงผลลัพธ์ -->
+            <div id="resultBox" class="mt-6 hidden rounded-xl p-4 text-sm border text-center transition-all">
+                <span id="resultIcon" class="mr-2 text-lg"></span>
+                <span id="resultMessage" class="font-medium"></span>
             </div>
         </div>
     </div>
 
-    <!-- Confirm Modal (Hidden by default) -->
+    <!-- Confirm Modal -->
     <div id="confirmModal" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl transform transition-all">
             <div class="text-center">
@@ -92,16 +116,21 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                 </div>
-                <h3 class="text-lg leading-6 font-bold text-gray-900" id="modalTitle">ยืนยันการลบข้อมูล</h3>
-                <div class="mt-2">
-                    <p class="text-sm text-gray-500" id="modalDesc">ระบบจะลบข้อมูลทั้งแถวที่มีข้อความนี้ คุณแน่ใจหรือไม่?</p>
+                <h3 class="text-lg leading-6 font-bold text-gray-900">ยืนยันการลบข้อมูล</h3>
+                <div class="mt-2 text-sm text-gray-500 space-y-2">
+                    <p>คุณกำลังจะลบข้อมูลต่อไปนี้ออกจากระบบ:</p>
+                    <div class="bg-gray-50 p-3 rounded-lg border text-left">
+                        <p><strong>เรื่อง:</strong> <span id="confirmNovel" class="text-gray-700"></span></p>
+                        <p><strong>ตอนที่:</strong> <span id="confirmChapter" class="text-gray-700"></span></p>
+                    </div>
+                    <p class="text-red-500 font-semibold">การกระทำนี้ไม่สามารถย้อนกลับได้</p>
                 </div>
             </div>
             <div class="mt-6 flex gap-3">
-                <button onclick="closeModal()" class="w-full inline-flex justify-center rounded-xl border border-gray-300 shadow-sm px-4 py-2.5 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none">
+                <button onclick="closeModal()" class="w-full inline-flex justify-center rounded-xl border border-gray-300 shadow-sm px-4 py-2.5 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                     ยกเลิก
                 </button>
-                <button onclick="executeDelete()" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2.5 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none">
+                <button onclick="executeDelete()" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2.5 bg-red-600 text-base font-medium text-white hover:bg-red-700 transition-colors">
                     ยืนยันลบ
                 </button>
             </div>
@@ -109,93 +138,178 @@
     </div>
 
     <script>
-        const btnText = document.getElementById('btnText');
-        const submitBtn = document.getElementById('submitBtn');
-        const resultBox = document.getElementById('resultBox');
-        const resultMessage = document.getElementById('resultMessage');
-        const resultIcon = document.getElementById('resultIcon');
-        const confirmModal = document.getElementById('confirmModal');
-
-        // ฝังลิงก์ Web App ของคุณไว้ที่นี่
+        // ลิงก์ Web App
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzN1z7MZ20t-DE3YiRjeyS-Jme_q52t-b1uzleS1jm6Ro6aiWbFNeyL4bU6SxDsldO-/exec';
+        
+        // ตัวแปรเก็บข้อมูล
+        let allNovels = [];
+        let allChapters = [];
+        let selectedChapterId = null;
 
-        // ฟังก์ชันเมื่อกดปุ่มหลัก
+        // Elements
+        const loadingState = document.getElementById('loadingState');
+        const deleteForm = document.getElementById('deleteForm');
+        const novelSelect = document.getElementById('novelSelect');
+        const chapterSelect = document.getElementById('chapterSelect');
+        const chapterTitle = document.getElementById('chapterTitle');
+        const submitBtn = document.getElementById('submitBtn');
+        const confirmModal = document.getElementById('confirmModal');
+        const resultBox = document.getElementById('resultBox');
+
+        // ทำงานทันทีเมื่อเปิดหน้าเว็บ
+        window.onload = async function() {
+            try {
+                // ยิง GET Request ไปดึงข้อมูล (จะไปเรียกฟังก์ชัน doGet ใน Code.gs)
+                const response = await fetch(WEB_APP_URL);
+                const data = await response.json();
+                
+                allNovels = data.novels;
+                allChapters = data.chapters;
+
+                populateNovels();
+
+                // ซ่อนโหลดดิ้ง แสดงฟอร์ม
+                loadingState.classList.add('hidden');
+                deleteForm.classList.remove('hidden');
+
+            } catch (error) {
+                loadingState.innerHTML = `<div class="text-red-500 mb-2">❌ ไม่สามารถดึงข้อมูลได้</div><p class="text-sm text-gray-500 text-center">โปรดตรวจสอบ Web App URL หรือการเชื่อมต่ออินเทอร์เน็ต</p>`;
+                console.error("Error fetching data:", error);
+            }
+        };
+
+        // เอาชื่อนิยายมาใส่ใน Dropdown ตัวแรก
+        function populateNovels() {
+            novelSelect.innerHTML = '<option value="">-- เลือกเรื่อง --</option>';
+            allNovels.forEach(novel => {
+                const option = document.createElement('option');
+                option.value = novel.id; // เก็บ id นิยายไว้เป็น value
+                option.textContent = novel.title; // แสดงชื่อเรื่อง
+                novelSelect.appendChild(option);
+            });
+        }
+
+        // เมื่อเลือกนิยาย ให้กรองและแสดงตอนของนิยายเรื่องนั้น
+        function filterChapters() {
+            const selectedNovelId = novelSelect.value;
+            chapterSelect.innerHTML = '<option value="">-- เลือกตอน --</option>';
+            chapterTitle.value = '';
+            submitBtn.disabled = true;
+
+            if (!selectedNovelId) {
+                chapterSelect.disabled = true;
+                return;
+            }
+
+            // กรองตอนที่มี novelId ตรงกับที่เลือก
+            const filteredChapters = allChapters.filter(ch => String(ch.novelId) === String(selectedNovelId));
+
+            if (filteredChapters.length === 0) {
+                chapterSelect.innerHTML = '<option value="">-- ไม่มีตอนในเรื่องนี้ --</option>';
+                chapterSelect.disabled = true;
+                return;
+            }
+
+            chapterSelect.disabled = false;
+            
+            // นำตอนที่กรองได้มาใส่ Dropdown
+            // เรียงลำดับตอนจากน้อยไปมาก
+            filteredChapters.sort((a, b) => {
+                return (Number(a.chapterNumber) || 0) - (Number(b.chapterNumber) || 0);
+            });
+
+            filteredChapters.forEach(ch => {
+                const option = document.createElement('option');
+                option.value = ch.id; // เก็บ id ของตอนไว้
+                option.textContent = `ตอนที่ ${ch.chapterNumber}`;
+                novelSelect.appendChild(option);
+                // แนบข้อมูลชื่อตอนเก็บไว้ใน dataset เพื่อให้ดึงง่ายๆ
+                option.dataset.title = ch.title;
+                chapterSelect.appendChild(option);
+            });
+        }
+
+        // เมื่อเลือกตอน ให้อัปเดตชื่อตอนในช่องล่างสุด
+        function updateChapterTitle() {
+            const selectedOption = chapterSelect.options[chapterSelect.selectedIndex];
+            
+            if (selectedOption.value === "") {
+                chapterTitle.value = '';
+                selectedChapterId = null;
+                submitBtn.disabled = true;
+            } else {
+                chapterTitle.value = selectedOption.dataset.title || "ไม่มีชื่อตอน";
+                selectedChapterId = selectedOption.value; // จำ ID ของตอนไว้
+                submitBtn.disabled = false;
+            }
+        }
+
+        // กดปุ่มค้นหาและลบ
         function initiateDelete() {
-            const searchText = document.getElementById('searchText').value.trim();
-            if(!searchText) return;
+            // อัปเดตข้อความใน Modal
+            const novelName = novelSelect.options[novelSelect.selectedIndex].text;
+            const chapterNum = chapterSelect.options[chapterSelect.selectedIndex].text;
             
-            // เปลี่ยนข้อความใน Modal
-            document.getElementById('modalDesc').innerHTML = `ระบบจะค้นหาคำว่า <strong class="text-red-600">"${searchText}"</strong> และลบข้อมูลทิ้งทั้งแถว คุณแน่ใจหรือไม่?`;
+            document.getElementById('confirmNovel').innerText = novelName;
+            document.getElementById('confirmChapter').innerText = `${chapterNum} : ${chapterTitle.value}`;
             
-            // แสดง Modal
+            // เปิด Modal
             confirmModal.classList.remove('hidden');
             confirmModal.classList.add('flex');
         }
 
-        // ฟังก์ชันปิด Modal
         function closeModal() {
             confirmModal.classList.add('hidden');
             confirmModal.classList.remove('flex');
         }
 
-        // ฟังก์ชันดำเนินการส่งข้อมูลไปที่ Google Apps Script
+        // ส่งคำสั่งลบไปที่ Backend (ใช้ action: 'deleteChapter' ที่คุณมีอยู่แล้ว)
         async function executeDelete() {
-            closeModal(); // ปิด Modal ก่อน
+            closeModal();
             
-            const searchText = document.getElementById('searchText').value.trim();
-            const sheetName = document.getElementById('sheetName').value.trim();
-
-            // เปลี่ยนสถานะปุ่มเป็น Loading
             submitBtn.disabled = true;
-            btnText.innerHTML = '<span class="loader"></span> กำลังค้นหาและลบ...';
-            submitBtn.classList.replace('bg-red-500', 'bg-gray-400');
-            submitBtn.classList.replace('hover:bg-red-600', 'hover:bg-gray-500');
+            document.getElementById('btnText').innerHTML = '<span class="loader"></span> กำลังลบข้อมูล...';
             resultBox.classList.add('hidden');
 
+            // ใช้ action: 'deleteChapter' แบบที่ Code.gs รับรองไว้
             const payload = {
-                action: 'deleteByText',
-                searchText: searchText,
-                sheetName: sheetName
+                action: 'deleteChapter',
+                id: selectedChapterId 
             };
 
             try {
-                // ส่ง Request ไปยัง Google Apps Script (ใช้ text/plain เพื่อเลี่ยงปัญหา CORS preflight)
                 const response = await fetch(WEB_APP_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8',
-                    },
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 });
 
                 const result = await response.json();
 
-                // แสดงผลลัพธ์
                 resultBox.classList.remove('hidden');
-                if(result.success) {
+                if(result.status === 'success') {
                     resultBox.className = 'mt-6 rounded-xl p-4 text-sm border bg-green-50 border-green-200 text-green-700';
-                    resultIcon.innerText = '✅';
-                    resultMessage.innerText = result.message;
-                    document.getElementById('searchText').value = ''; // เคลียร์ช่องค้นหา
+                    document.getElementById('resultIcon').innerText = '✅';
+                    document.getElementById('resultMessage').innerText = 'ลบข้อมูลสำเร็จ!';
+                    
+                    // ลบเสร็จให้รีโหลดข้อมูลใหม่ (ลบตัวเลือกที่หายไป)
+                    setTimeout(() => { location.reload(); }, 1500);
+
                 } else {
                     resultBox.className = 'mt-6 rounded-xl p-4 text-sm border bg-amber-50 border-amber-200 text-amber-700';
-                    resultIcon.innerText = 'ℹ️';
-                    resultMessage.innerText = result.message;
+                    document.getElementById('resultIcon').innerText = 'ℹ️';
+                    document.getElementById('resultMessage').innerText = result.message || 'เกิดข้อผิดพลาด';
                 }
 
             } catch (error) {
-                // แสดงผลเมื่อเกิด Error
                 resultBox.classList.remove('hidden');
                 resultBox.className = 'mt-6 rounded-xl p-4 text-sm border bg-red-50 border-red-200 text-red-700';
-                resultIcon.innerText = '❌';
-                resultMessage.innerText = 'ไม่สามารถเชื่อมต่อได้ กรุณาตรวจสอบลิงก์ Web App อีกครั้ง';
+                document.getElementById('resultIcon').innerText = '❌';
+                document.getElementById('resultMessage').innerText = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้';
                 console.error('Error:', error);
             } finally {
-                // คืนค่าปุ่มกลับมาเหมือนเดิม
                 submitBtn.disabled = false;
-                btnText.innerText = 'ค้นหาและลบแถวทันที';
-                submitBtn.classList.replace('bg-gray-400', 'bg-red-500');
-                submitBtn.classList.replace('hover:bg-gray-500', 'hover:bg-red-600');
+                document.getElementById('btnText').innerText = 'ค้นหาและลบแถวทันที';
             }
         }
     </script>
